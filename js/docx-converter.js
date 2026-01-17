@@ -322,6 +322,17 @@ const DocxConverter = (function () {
             case 'p':
                 const pContent = children().trim();
                 if (!pContent) return '';
+
+                // heuristic: if paragraph is entirely bold, treat as code block
+                // Bold text from children() comes as **text**
+                if (pContent.startsWith('**') && pContent.endsWith('**')) {
+                    const inner = pContent.substring(2, pContent.length - 2);
+                    // Ensure it doesn't contain other bold markers inside (which would mean multiple bold segments)
+                    if (!inner.includes('**')) {
+                        return '\n```\n' + inner + '\n```\n\n';
+                    }
+                }
+
                 return pContent + '\n\n';
 
             // Bold and strong - handle spaces properly
