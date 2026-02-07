@@ -210,7 +210,7 @@ pre {
     border-radius: 8px;
     overflow-x: auto;
     margin: 1.5rem 0;
-    border: 1px solid transparent;
+    border: 1px solid rgba(100, 255, 218, 0.1);
     /* Align with cards */
     transition: var(--transition);
 }
