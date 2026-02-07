@@ -119,10 +119,20 @@ const Export = (function () {
 
         try {
             // Try local CSS first (matches what the user sees in editor)
-            const response = await fetch('css/output.css');
-            if (!response.ok) throw new Error('Failed to fetch local CSS');
-            cachedCss = await response.text();
-            return cachedCss;
+            // Add a timeout to prevent hanging if local server is slow/unresponsive
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 200); // 200ms timeout
+
+            try {
+                const response = await fetch('css/output.css', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (!response.ok) throw new Error('Failed to fetch local CSS');
+                cachedCss = await response.text();
+                return cachedCss;
+            } catch (e) {
+                clearTimeout(timeoutId);
+                throw e;
+            }
         } catch (error) {
             console.warn('Export: Could not fetch local CSS, using data URI fallback');
             // If local fetch fails (e.g. file protocol), use the updated fallback

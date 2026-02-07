@@ -273,9 +273,8 @@ const Editor = (function () {
     }
 
     // Image collapse state
-    let originalContent = '';
     let imagesCollapsed = false;
-    const IMAGE_PLACEHOLDER = '[📷 IMAGE DATA COLLAPSED - Click "Show Images" to expand]';
+    let imageStore = {}; // Store image data by ID
 
     /**
      * Initialize collapse button
@@ -294,13 +293,16 @@ const Editor = (function () {
         if (!editorTextarea) return;
 
         if (imagesCollapsed) {
-            // Expand - restore original content
-            editorTextarea.value = originalContent;
+            // Expand - Restore images into the CURRENT content (preserving key text edits)
+            const currentContent = editorTextarea.value;
+            editorTextarea.value = restoreImages(currentContent);
             imagesCollapsed = false;
         } else {
-            // Collapse - save current content and replace images with placeholders
-            originalContent = editorTextarea.value;
-            editorTextarea.value = collapseImages(originalContent);
+            // Collapse - Replace images with unique placeholders and store data
+            const content = editorTextarea.value;
+            // Clear store on new collapse to avoid stale data buildup
+            imageStore = {};
+            editorTextarea.value = collapseImages(content);
             imagesCollapsed = true;
         }
 
@@ -315,19 +317,38 @@ const Editor = (function () {
      */
     function collapseImages(content) {
         // Match HTML image tags with base64 data
-        const htmlImgPattern = /<p[^>]*><img[^>]*src="data:image[^"]*"[^>]*><\/p>/g;
+        const htmlImgPattern = /<p[^>]*><img[^>]*src="(data:image[^"]*)"[^>]*><\/p>/g;
         // Match markdown images with base64 data
-        const mdImgPattern = /!\[[^\]]*\]\(data:image[^)]+\)/g;
+        const mdImgPattern = /!\[([^\]]*)\]\((data:image[^)]+)\)/g;
 
         let result = content;
 
         // Replace HTML image tags
-        result = result.replace(htmlImgPattern, IMAGE_PLACEHOLDER);
+        result = result.replace(htmlImgPattern, (match, dataUrl) => {
+            const id = 'img-' + Math.random().toString(36).substr(2, 9);
+            imageStore[id] = match; // Store the WHOLE tag
+            return `[📷 IMAGE-COLLAPSED-${id}]`;
+        });
 
-        // Replace markdown images with base64
-        result = result.replace(mdImgPattern, IMAGE_PLACEHOLDER);
+        // Replace markdown images
+        result = result.replace(mdImgPattern, (match, alt, dataUrl) => {
+            const id = 'img-' + Math.random().toString(36).substr(2, 9);
+            imageStore[id] = match; // Store the WHOLE markdown image
+            return `[📷 IMAGE-COLLAPSED-${id}]`;
+        });
 
         return result;
+    }
+
+    /**
+     * Restore images from placeholders
+     * @param {string} content 
+     * @returns {string} Content with restored images
+     */
+    function restoreImages(content) {
+        return content.replace(/\[📷 IMAGE-COLLAPSED-([^\]]+)\]/g, (match, id) => {
+            return imageStore[id] || match; // Return original image or placeholder if not found
+        });
     }
 
     /**
