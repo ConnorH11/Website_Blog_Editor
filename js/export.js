@@ -111,34 +111,18 @@ const Export = (function () {
     }
 
     /**
-     * Fetch CSS from connorhorning.com
+     * Fetch CSS - Optimized to use embedded CSS directly
+     * Previously tried to fetch css/output.css which caused 2-3 minute hangs
+     * Now uses embedded fallback CSS for instant performance
      * @returns {Promise<string>} The CSS content
      */
     async function fetchCss() {
         if (cachedCss) return cachedCss;
 
-        try {
-            // Try local CSS first (matches what the user sees in editor)
-            // Add a timeout to prevent hanging if local server is slow/unresponsive
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 200); // 200ms timeout
-
-            try {
-                const response = await fetch('css/output.css', { signal: controller.signal });
-                clearTimeout(timeoutId);
-                if (!response.ok) throw new Error('Failed to fetch local CSS');
-                cachedCss = await response.text();
-                return cachedCss;
-            } catch (e) {
-                clearTimeout(timeoutId);
-                throw e;
-            }
-        } catch (error) {
-            console.warn('Export: Could not fetch local CSS, using data URI fallback');
-            // If local fetch fails (e.g. file protocol), use the updated fallback
-            // We removed the external fetch to ensure consistency
-            return getFallbackCss();
-        }
+        // Use embedded CSS directly instead of fetching
+        // This eliminates the 2-3 minute delay caused by fetch timeouts
+        cachedCss = getFallbackCss();
+        return cachedCss;
     }
 
     /**

@@ -108,6 +108,13 @@ const Preview = (function () {
                     link.setAttribute('rel', 'noopener noreferrer');
                 }
             });
+
+            // Apply syntax highlighting to code blocks
+            if (typeof hljs !== 'undefined') {
+                previewContent.querySelectorAll('pre code').forEach(block => {
+                    hljs.highlightElement(block);
+                });
+            }
         } catch (error) {
             console.error('Preview: Error rendering markdown', error);
             previewContent.innerHTML = `<p class="preview-error">Error rendering preview: ${error.message}</p>`;
