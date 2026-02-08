@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blog Editor | Connor Horning</title>
+    <title>Blog Editor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -95,6 +95,49 @@
                 <textarea id="post-description" rows="2" placeholder="Brief description for index page..."
                     maxlength="200"></textarea>
             </div>
+
+            <!-- Custom CSS Upload -->
+            <div class="form-group">
+                <label for="custom-css-upload">Custom CSS (Optional)</label>
+                <div class="css-upload-group">
+                    <input type="file" id="custom-css-upload" accept=".css" hidden>
+                    <button type="button" id="css-upload-btn" class="btn-smart-small">📁 Upload CSS</button>
+                    <button type="button" id="css-clear-btn" class="btn-smart-small" style="display:none">🗑️
+                        Remove</button>
+                    <span id="css-filename" class="css-filename"></span>
+                </div>
+                <label class="checkbox-label" style="margin-top: 0.5rem; display: block;">
+                    <input type="checkbox" id="use-custom-css" checked>
+                    Use custom CSS for downloads
+                </label>
+                <label class="checkbox-label" style="margin-top: 0.5rem; display: block;">
+                    <input type="checkbox" id="include-navbar-footer">
+                    Include navigation and footer in HTML
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label for="custom-navbar-upload">Custom Navbar (Optional)</label>
+                <div class="css-upload-group">
+                    <input type="file" id="custom-navbar-upload" accept=".html" hidden>
+                    <button type="button" id="navbar-upload-btn" class="btn-smart-small">📁 Upload</button>
+                    <button type="button" id="navbar-clear-btn" class="btn-smart-small" style="display:none">🗑️
+                        Remove</button>
+                    <span id="navbar-filename" class="css-filename"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="custom-footer-upload">Custom Footer (Optional)</label>
+                <div class="css-upload-group">
+                    <input type="file" id="custom-footer-upload" accept=".html" hidden>
+                    <button type="button" id="footer-upload-btn" class="btn-smart-small">📁 Upload</button>
+                    <button type="button" id="footer-clear-btn" class="btn-smart-small" style="display:none">🗑️
+                        Remove</button>
+                    <span id="footer-filename" class="css-filename"></span>
+                </div>
+            </div>
+
             <div class="form-group project-only" id="cover-image-group" style="display: none;">
                 <label for="cover-image">Cover Image URL</label>
                 <input type="text" id="cover-image" placeholder="https://...">

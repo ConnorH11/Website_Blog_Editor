@@ -4,8 +4,17 @@
  */
 
 const Export = (function () {
-    // Cached CSS from connorhorning.com
-    let cachedCss = null;
+    // Cached CSS
+    let cachedCss = null;  // Default fallback CSS
+    let customCss = null;  // User-uploaded custom CSS
+    let customNavbarHtml = null;  // User-uploaded navbar HTML
+    let customFooterHtml = null;  // User-uploaded footer HTML
+    const CUSTOM_CSS_KEY = 'blog-editor-custom-css';
+    const CUSTOM_CSS_FILENAME_KEY = 'blog-editor-custom-css-filename';
+    const CUSTOM_NAVBAR_KEY = 'blog-editor-custom-navbar';
+    const CUSTOM_NAVBAR_FILENAME_KEY = 'blog-editor-custom-navbar-filename';
+    const CUSTOM_FOOTER_KEY = 'blog-editor-custom-footer';
+    const CUSTOM_FOOTER_FILENAME_KEY = 'blog-editor-custom-footer-filename';
 
     // DOM Elements
     let downloadHtmlBtn;
@@ -16,6 +25,20 @@ const Export = (function () {
     let snippetCode;
     let copySnippetModalBtn;
     let exportFilename;
+    let cssUploadBtn;
+    let cssUploadInput;
+    let cssClearBtn;
+    let cssFilenameSpan;
+    let useCustomCssCheckbox;
+    let includeNavFooterCheckbox;
+    let navbarUploadBtn;
+    let navbarUploadInput;
+    let navbarClearBtn;
+    let navbarFilenameSpan;
+    let footerUploadBtn;
+    let footerUploadInput;
+    let footerClearBtn;
+    let footerFilenameSpan;
 
     /**
      * Initialize the export module
@@ -29,9 +52,29 @@ const Export = (function () {
         snippetCode = document.getElementById('snippet-code');
         copySnippetModalBtn = document.getElementById('copy-snippet-btn');
         exportFilename = document.getElementById('export-filename');
+        cssUploadBtn = document.getElementById('css-upload-btn');
+        cssUploadInput = document.getElementById('custom-css-upload');
+        cssClearBtn = document.getElementById('css-clear-btn');
+        cssFilenameSpan = document.getElementById('css-filename');
+        useCustomCssCheckbox = document.getElementById('use-custom-css');
+        includeNavFooterCheckbox = document.getElementById('include-navbar-footer');
+        navbarUploadBtn = document.getElementById('navbar-upload-btn');
+        navbarUploadInput = document.getElementById('custom-navbar-upload');
+        navbarClearBtn = document.getElementById('navbar-clear-btn');
+        navbarFilenameSpan = document.getElementById('navbar-filename');
+        footerUploadBtn = document.getElementById('footer-upload-btn');
+        footerUploadInput = document.getElementById('custom-footer-upload');
+        footerClearBtn = document.getElementById('footer-clear-btn');
+        footerFilenameSpan = document.getElementById('footer-filename');
 
         setupEventListeners();
         setupFilenameUpdater();
+        setupCustomCss();
+        loadCustomCss();
+        setupCustomNavbar();
+        loadCustomNavbar();
+        setupCustomFooter();
+        loadCustomFooter();
     }
 
     /**
@@ -62,6 +105,317 @@ const Export = (function () {
 
         if (copySnippetModalBtn) {
             copySnippetModalBtn.addEventListener('click', copySnippetToClipboard);
+        }
+    }
+
+    /**
+     * Set up custom CSS upload functionality
+     */
+    function setupCustomCss() {
+        if (cssUploadBtn && cssUploadInput) {
+            cssUploadBtn.addEventListener('click', () => {
+                cssUploadInput.click();
+            });
+
+            cssUploadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file && file.name.endsWith('.css')) {
+                    uploadCustomCss(file);
+                } else {
+                    showToast('Please select a valid CSS file', 'error');
+                }
+            });
+        }
+
+        if (cssClearBtn) {
+            cssClearBtn.addEventListener('click', clearCustomCss);
+        }
+    }
+
+    /**
+     * Upload and save custom CSS
+     * @param {File} file - The CSS file to upload
+     */
+    function uploadCustomCss(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const cssContent = e.target.result;
+            customCss = cssContent;
+
+            // Save to localStorage
+            try {
+                localStorage.setItem(CUSTOM_CSS_KEY, cssContent);
+                localStorage.setItem(CUSTOM_CSS_FILENAME_KEY, file.name);
+
+                // Update UI
+                if (cssFilenameSpan) {
+                    cssFilenameSpan.textContent = file.name;
+                }
+                if (cssClearBtn) {
+                    cssClearBtn.style.display = 'inline-block';
+                }
+
+                showToast(`Custom CSS '${file.name}' loaded successfully`, 'success');
+            } catch (error) {
+                console.error('Failed to save custom CSS:', error);
+                showToast('Failed to save CSS to cache', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    /**
+     * Load custom CSS from localStorage
+     */
+    function loadCustomCss() {
+        try {
+            const savedCss = localStorage.getItem(CUSTOM_CSS_KEY);
+            const savedFilename = localStorage.getItem(CUSTOM_CSS_FILENAME_KEY);
+
+            if (savedCss && savedFilename) {
+                customCss = savedCss;
+
+                if (cssFilenameSpan) {
+                    cssFilenameSpan.textContent = savedFilename;
+                }
+                if (cssClearBtn) {
+                    cssClearBtn.style.display = 'inline-block';
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load custom CSS:', error);
+        }
+    }
+
+    /**
+     * Clear custom CSS
+     */
+    function clearCustomCss() {
+        customCss = null;
+
+        try {
+            localStorage.removeItem(CUSTOM_CSS_KEY);
+            localStorage.removeItem(CUSTOM_CSS_FILENAME_KEY);
+
+            if (cssFilenameSpan) {
+                cssFilenameSpan.textContent = '';
+            }
+            if (cssClearBtn) {
+                cssClearBtn.style.display = 'none';
+            }
+            if (cssUploadInput) {
+                cssUploadInput.value = '';
+            }
+
+            showToast('Custom CSS removed', 'info');
+        } catch (error) {
+            console.error('Failed to clear custom CSS:', error);
+        }
+    }
+
+    /**
+     * Set up custom navbar upload functionality
+     */
+    function setupCustomNavbar() {
+        if (navbarUploadBtn && navbarUploadInput) {
+            navbarUploadBtn.addEventListener('click', () => {
+                navbarUploadInput.click();
+            });
+
+            navbarUploadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file && file.name.endsWith('.html')) {
+                    uploadCustomNavbar(file);
+                } else {
+                    showToast('Please select a valid HTML file', 'error');
+                }
+            });
+        }
+
+        if (navbarClearBtn) {
+            navbarClearBtn.addEventListener('click', clearCustomNavbar);
+        }
+    }
+
+    /**
+     * Upload and save custom navbar
+     * @param {File} file - The HTML file to upload
+     */
+    function uploadCustomNavbar(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const htmlContent = e.target.result;
+            customNavbarHtml = htmlContent;
+
+            try {
+                localStorage.setItem(CUSTOM_NAVBAR_KEY, htmlContent);
+                localStorage.setItem(CUSTOM_NAVBAR_FILENAME_KEY, file.name);
+
+                if (navbarFilenameSpan) {
+                    navbarFilenameSpan.textContent = file.name;
+                }
+                if (navbarClearBtn) {
+                    navbarClearBtn.style.display = 'inline-block';
+                }
+
+                showToast(`Custom navbar '${file.name}' loaded successfully`, 'success');
+            } catch (error) {
+                console.error('Failed to save custom navbar:', error);
+                showToast('Failed to save navbar to cache', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    /**
+     * Load custom navbar from localStorage
+     */
+    function loadCustomNavbar() {
+        try {
+            const savedHtml = localStorage.getItem(CUSTOM_NAVBAR_KEY);
+            const savedFilename = localStorage.getItem(CUSTOM_NAVBAR_FILENAME_KEY);
+
+            if (savedHtml && savedFilename) {
+                customNavbarHtml = savedHtml;
+
+                if (navbarFilenameSpan) {
+                    navbarFilenameSpan.textContent = savedFilename;
+                }
+                if (navbarClearBtn) {
+                    navbarClearBtn.style.display = 'inline-block';
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load custom navbar:', error);
+        }
+    }
+
+    /**
+     * Clear custom navbar
+     */
+    function clearCustomNavbar() {
+        customNavbarHtml = null;
+
+        try {
+            localStorage.removeItem(CUSTOM_NAVBAR_KEY);
+            localStorage.removeItem(CUSTOM_NAVBAR_FILENAME_KEY);
+
+            if (navbarFilenameSpan) {
+                navbarFilenameSpan.textContent = '';
+            }
+            if (navbarClearBtn) {
+                navbarClearBtn.style.display = 'none';
+            }
+            if (navbarUploadInput) {
+                navbarUploadInput.value = '';
+            }
+
+            showToast('Custom navbar removed', 'info');
+        } catch (error) {
+            console.error('Failed to clear custom navbar:', error);
+        }
+    }
+
+    /**
+     * Set up custom footer upload functionality
+     */
+    function setupCustomFooter() {
+        if (footerUploadBtn && footerUploadInput) {
+            footerUploadBtn.addEventListener('click', () => {
+                footerUploadInput.click();
+            });
+
+            footerUploadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file && file.name.endsWith('.html')) {
+                    uploadCustomFooter(file);
+                } else {
+                    showToast('Please select a valid HTML file', 'error');
+                }
+            });
+        }
+
+        if (footerClearBtn) {
+            footerClearBtn.addEventListener('click', clearCustomFooter);
+        }
+    }
+
+    /**
+     * Upload and save custom footer
+     * @param {File} file - The HTML file to upload
+     */
+    function uploadCustomFooter(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const htmlContent = e.target.result;
+            customFooterHtml = htmlContent;
+
+            try {
+                localStorage.setItem(CUSTOM_FOOTER_KEY, htmlContent);
+                localStorage.setItem(CUSTOM_FOOTER_FILENAME_KEY, file.name);
+
+                if (footerFilenameSpan) {
+                    footerFilenameSpan.textContent = file.name;
+                }
+                if (footerClearBtn) {
+                    footerClearBtn.style.display = 'inline-block';
+                }
+
+                showToast(`Custom footer '${file.name}' loaded successfully`, 'success');
+            } catch (error) {
+                console.error('Failed to save custom footer:', error);
+                showToast('Failed to save footer to cache', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    /**
+     * Load custom footer from localStorage
+     */
+    function loadCustomFooter() {
+        try {
+            const savedHtml = localStorage.getItem(CUSTOM_FOOTER_KEY);
+            const savedFilename = localStorage.getItem(CUSTOM_FOOTER_FILENAME_KEY);
+
+            if (savedHtml && savedFilename) {
+                customFooterHtml = savedHtml;
+
+                if (footerFilenameSpan) {
+                    footerFilenameSpan.textContent = savedFilename;
+                }
+                if (footerClearBtn) {
+                    footerClearBtn.style.display = 'inline-block';
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load custom footer:', error);
+        }
+    }
+
+    /**
+     * Clear custom footer
+     */
+    function clearCustomFooter() {
+        customFooterHtml = null;
+
+        try {
+            localStorage.removeItem(CUSTOM_FOOTER_KEY);
+            localStorage.removeItem(CUSTOM_FOOTER_FILENAME_KEY);
+
+            if (footerFilenameSpan) {
+                footerFilenameSpan.textContent = '';
+            }
+            if (footerClearBtn) {
+                footerClearBtn.style.display = 'none';
+            }
+            if (footerUploadInput) {
+                footerUploadInput.value = '';
+            }
+
+            showToast('Custom footer removed', 'info');
+        } catch (error) {
+            console.error('Failed to clear custom footer:', error);
         }
     }
 
@@ -111,47 +465,44 @@ const Export = (function () {
     }
 
     /**
-     * Fetch CSS - Optimized to use embedded CSS directly
-     * Previously tried to fetch css/output.css which caused 2-3 minute hangs
-     * Now uses embedded fallback CSS for instant performance
+     * Fetch CSS - Uses custom CSS if enabled, otherwise minimal fallback
      * @returns {Promise<string>} The CSS content
      */
     async function fetchCss() {
-        if (cachedCss) return cachedCss;
+        // Check if custom CSS should be used
+        if (useCustomCssCheckbox && useCustomCssCheckbox.checked && customCss) {
+            return customCss;
+        }
 
-        // Use embedded CSS directly instead of fetching
-        // This eliminates the 2-3 minute delay caused by fetch timeouts
-        cachedCss = getFallbackCss();
+        // Otherwise use minimal fallback CSS
+        if (!cachedCss) {
+            cachedCss = getFallbackCss();
+        }
         return cachedCss;
     }
 
     /**
-     * Get fallback CSS if fetch fails
-     * @returns {string} Fallback CSS
+     * Get minimal fallback CSS if custom CSS not provided
+     * Users are expected to upload their own CSS for full styling
+     * @returns {string} Minimal fallback CSS
      */
     function getFallbackCss() {
         return `
-/* CSS Variables & Reset */
+/* Minimal Fallback CSS - Upload custom CSS for full styling */
 :root {
     --bg-color: #0a192f;
-    --bg-color-light: #112240;
     --text-primary: #ecf0f1;
     --text-secondary: #8892b0;
     --accent: #64ffda;
-    --accent-glow: rgba(100, 255, 218, 0.1);
-
-    --font-heading: 'Playfair Display', serif;
-    --font-body: 'Inter', sans-serif;
-
-    --nav-height: 80px;
-    --transition: all 0.3s ease-in-out;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-heading: 'Playfair Display', Georgia, serif;
+    --font-mono: 'Fira Code', 'Courier New', Courier, monospace;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    scroll-behavior: smooth;
 }
 
 body {
@@ -159,1006 +510,138 @@ body {
     color: var(--text-primary);
     font-family: var(--font-body);
     line-height: 1.6;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
+    padding: 2rem;
+}
+
+.content-wrapper, .article-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    color: var(--text-primary);
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+
+p {
+    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
 }
 
 a {
-    text-decoration: none;
-    color: inherit;
-    transition: var(--transition);
+    color: var(--accent);
+    text-decoration: underline;
 }
 
-ul {
-    list-style: none;
+ul, ol {
+    margin-bottom: 1.5rem;
+    padding-left: 2rem;
 }
 
-/* Utilities */
-.content-wrapper {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-    width: 100%;
+li {
+    margin-bottom: 0.5rem;
 }
 
-.section {
-    padding: 60px 0;
-    min-height: auto;
-    display: flex;
-    align-items: center;
+code {
+    font-family: var(--font-mono);
+    background: rgba(100, 255, 218, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--accent);
 }
 
-/* Typography */
-h1,
-h2,
-h3 {
-    font-family: var(--font-heading);
-    color: var(--text-primary);
-    font-weight: 700;
-}
-
-/* Code Blocks */
 pre {
-    background: var(--bg-color-light);
+    background: rgba(0, 0, 0, 0.3);
     padding: 1.5rem;
     border-radius: 8px;
     overflow-x: auto;
     margin: 1.5rem 0;
-    border: 1px solid rgba(100, 255, 218, 0.1);
-    /* Align with cards */
-    transition: var(--transition);
 }
 
-pre:hover {
-    border-color: rgba(100, 255, 218, 0.1);
-    box-shadow: 0 10px 30px -15px rgba(2, 12, 27, 0.7);
-}
-
-code {
-    font-family: 'Fira Code', 'Courier New', Courier, monospace;
-    /* robust monospace stack */
-    font-size: 0.95rem;
-    color: var(--accent);
-    /* Default code color */
-}
-
-/* Inline code specific */
-p code,
-li code {
-    background: rgba(100, 255, 218, 0.07);
-    /* Very subtle accent background */
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
-    font-size: 0.9em;
-}
-
-/* Pre block code override */
 pre code {
     background: transparent;
     padding: 0;
     color: #e6f1ff;
-    /* Light text for dark block */
-    border-radius: 0;
 }
 
-.section-title {
-    font-size: 2.5rem;
-    margin-bottom: 3rem;
-    position: relative;
-    display: inline-block;
+blockquote {
+    border-left: 4px solid var(--accent);
+    padding-left: 1rem;
+    margin: 1.5rem 0;
+    color: var(--text-secondary);
+    font-style: italic;
 }
 
-.section-title::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 0;
-    width: 60px;
-    height: 4px;
-    background: var(--accent);
+hr {
+    border: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 2rem 0;
 }
 
-/* Animations */
-.hidden-section {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-}
-
-.show-section {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* Navigation - Enhanced Glassmorphism */
-.navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
+table {
     width: 100%;
-    height: var(--nav-height);
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+}
+
+th, td {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem;
+    text-align: left;
+}
+
+th {
+    background: rgba(100, 255, 218, 0.1);
+    font-weight: 600;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 8px;
+}
+
+/* Basic navbar styling */
+.navbar {
     background: rgba(10, 25, 47, 0.9);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 10px 30px -10px rgba(2, 12, 27, 0.7);
-    border-bottom: 1px solid rgba(100, 255, 218, 0.1);
-    transition: var(--transition);
+    padding: 1rem 2rem;
+    margin-bottom: 2rem;
 }
 
 .nav-container {
-    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .logo {
-    font-family: var(--font-heading);
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: bold;
     color: var(--accent);
-    transition: var(--transition);
-}
-
-.logo:hover {
-    text-shadow: 0 0 20px var(--accent-glow);
-}
-
-.desktop-menu {
-    display: flex;
-    gap: 2rem;
+    text-decoration: none;
 }
 
 .nav-link {
-    font-size: 0.9rem;
     color: var(--text-secondary);
-    position: relative;
-    padding-bottom: 4px;
-}
-
-.nav-link::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: var(--accent);
-    transition: width 0.3s ease;
-}
-
-.nav-link:hover::after,
-.nav-link.active::after {
-    width: 100%;
-}
-
-.nav-link:hover,
-.nav-link.active {
-    color: var(--accent);
-}
-
-/* Hero Section */
-.hero-section {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    padding-top: var(--nav-height);
-    position: relative;
-}
-
-.hero-grid {
-    display: grid;
-    grid-template-columns: 3fr 2fr;
-    gap: 2rem;
-    align-items: center;
-}
-
-.eyebrow {
-    color: var(--accent);
-    font-family: var(--font-body);
-    font-weight: 500;
-    margin-bottom: 1.5rem;
-    font-size: 1.1rem;
-    letter-spacing: 0.05em;
-}
-
-.hero-title {
-    font-size: clamp(3rem, 5vw, 5rem);
-    /* Responsive font size */
-    line-height: 1.1;
-    margin-bottom: 1.5rem;
-}
-
-.hero-subtitle {
-    font-size: clamp(1.2rem, 2vw, 2rem);
-    color: var(--text-secondary);
-    margin-bottom: 2.5rem;
-    max-width: 600px;
-}
-
-.hero-visual {
-    display: flex;
-    justify-content: center;
-    position: relative;
-}
-
-/* Abstract Hero Shape */
-.hero-shape {
-    width: 300px;
-    height: 300px;
-    background: linear-gradient(45deg, var(--accent), transparent);
-    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-    opacity: 0.2;
-    animation: morph 8s ease-in-out infinite;
-    filter: blur(40px);
-}
-
-@keyframes morph {
-    0% {
-        border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-    }
-
-    50% {
-        border-radius: 70% 30% 30% 70% / 70% 70% 30% 30%;
-    }
-
-    100% {
-        border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-    }
-}
-
-@media (max-width: 768px) {
-    .hero-grid {
-        grid-template-columns: 1fr;
-        text-align: center;
-    }
-
-    .hero-visual {
-        display: none;
-        /* Hide visual on mobile to save space or adjust */
-    }
-
-    .cta-group {
-        justify-content: center;
-        display: flex;
-    }
-
-    .hero-subtitle {
-        margin-left: auto;
-        margin-right: auto;
-    }
-}
-
-/* Buttons - Enhanced with glow effects */
-.btn {
-    display: inline-block;
-    padding: 1rem 2rem;
-    border-radius: 4px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-primary {
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    margin-right: 1rem;
-    background: transparent;
-}
-
-.btn-primary:hover {
-    background: var(--accent-glow);
-    box-shadow: 0 0 20px rgba(100, 255, 218, 0.3);
-    transform: translateY(-2px);
-}
-
-.btn-outline {
-    border: 1px solid var(--text-secondary);
-    color: var(--text-secondary);
-    background: transparent;
-}
-
-.btn-outline:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    transform: translateY(-2px);
-}
-
-/* Projects Grid */
-.projects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-}
-
-.project-card {
-    background: var(--bg-color-light);
-    border-radius: 8px;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid transparent;
-}
-
-.project-card:hover {
-    transform: translateY(-8px);
-    border-color: rgba(100, 255, 218, 0.2);
-    box-shadow: 0 20px 40px -20px rgba(100, 255, 218, 0.15);
-}
-
-.card-image-placeholder {
-    height: 200px;
-    background: #233554;
-}
-
-.card-content {
-    padding: 1.5rem;
-}
-
-.card-content h3 {
-    margin-bottom: 0.5rem;
-}
-
-.card-content p {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-}
-
-.card-link {
-    color: var(--accent);
-    font-size: 0.9rem;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .hero-title {
-        font-size: 2.5rem;
-    }
-
-    .hero-subtitle {
-        font-size: 1.5rem;
-    }
-
-    .desktop-menu {
-        display: none;
-    }
-
-    .mobile-toggle {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        width: 30px;
-        height: 21px;
-        cursor: pointer;
-        z-index: 1001;
-        /* Above overlay */
-    }
-
-    .mobile-toggle span {
-        display: block;
-        width: 100%;
-        height: 3px;
-        background: var(--accent);
-        border-radius: 2px;
-        transition: var(--transition);
-    }
-}
-
-/* Mobile Menu Overlay */
-.mobile-menu {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    background: var(--bg-color-light);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: var(--transition);
-    z-index: 1000;
-}
-
-.mobile-menu.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-.mobile-link {
-    font-family: var(--font-heading);
-    font-size: 2rem;
-    color: var(--text-primary);
-    margin: 1.5rem 0;
-    transition: var(--transition);
-}
-
-.mobile-link:hover {
-    color: var(--accent);
-    transform: translateX(10px);
-}
-
-/* Hamburger Animation */
-.mobile-toggle.active span:nth-child(1) {
-    transform: rotate(45deg) translate(5px, 8px);
-}
-
-.mobile-toggle.active span:nth-child(2) {
-    opacity: 0;
-}
-
-.mobile-toggle.active span:nth-child(3) {
-    transform: rotate(-45deg) translate(5px, -8px);
-}
-
-/* Articles List */
-.articles-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    max-width: 800px;
-}
-
-.article-item {
-    display: flex;
-    align-items: baseline;
-    gap: 2rem;
-    padding: 1.5rem;
-    border-radius: 8px;
-    background: transparent;
-    transition: var(--transition);
-    border: 1px solid transparent;
-    position: relative;
-    /* For clickable overlay */
-    cursor: pointer;
-}
-
-.article-item:hover {
-    background: var(--bg-color-light);
-    border-color: rgba(100, 255, 218, 0.1);
-    transform: translateX(10px);
-}
-
-/* Clickable Offset for Cards */
-.card-link-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10;
-}
-
-.article-item .date {
-    color: var(--text-secondary);
-    font-family: var(--font-body);
-    min-width: 80px;
-    font-size: 0.9rem;
-}
-
-.article-info h3 {
-    margin-bottom: 0.5rem;
-    color: var(--text-primary);
-}
-
-.article-info p {
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-}
-
-.read-more {
-    margin-left: auto;
-    color: var(--accent);
-    font-size: 0.9rem;
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--accent);
-    border-radius: 4px;
-    opacity: 1;
-    /* Always visible now */
-    transform: none;
-    transition: var(--transition);
-    text-decoration: none;
-    z-index: 11;
-    /* Above overlay if clicked directly */
-}
-
-.read-more:hover,
-.article-item:hover .read-more {
-    background: var(--accent-glow);
-    transform: translateY(-2px);
-}
-
-/* About Section */
-.two-col {
-    display: grid;
-    grid-template-columns: 3fr 2fr;
-    gap: 4rem;
-    align-items: center;
-}
-
-.about-image {
-    position: relative;
-}
-
-.profile-img {
-    max-width: 100%;
-    /* Changed from width: 100% to max-width */
-    width: auto;
-    /* Allow it to be smaller */
-    border-radius: 4px;
-    transition: var(--transition);
-    display: block;
-    margin: 0 auto;
-    box-shadow: 20px 20px 0px 0px var(--bg-color-light);
-}
-
-.profile-img:hover {
-    transform: translate(-5px, -5px);
-    box-shadow: 25px 25px 0px 0px var(--accent-glow);
-}
-
-/* Hero Image Specifics */
-.hero-visual .profile-img {
-    max-width: 250px;
-    border-radius: 50%;
-    /* Circle shape for hero */
-    box-shadow: 0 0 30px rgba(100, 255, 218, 0.2);
-    border: 2px solid var(--accent);
-}
-
-.hero-visual .profile-img:hover {
-    box-shadow: 0 0 50px rgba(100, 255, 218, 0.4);
-    transform: scale(1.05);
-}
-
-/* Contact Section */
-.centered {
-    text-align: center;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.contact-text {
-    max-width: 600px;
-    margin: 0 auto 2rem;
-    font-size: 1.2rem;
-    color: var(--text-secondary);
-}
-
-.contact-cards {
-    margin-bottom: 2rem;
-    color: var(--text-primary);
-}
-
-.highlight-link {
-    color: var(--accent);
-}
-
-.social-links {
-    margin-top: 4rem;
-    display: flex;
-    gap: 2rem;
-    justify-content: center;
-}
-
-.social-icon {
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-    position: relative;
-    padding-bottom: 5px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 500;
-}
-
-.social-icon:hover {
-    color: var(--accent);
-}
-
-.social-icon::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: 0;
-    left: 0;
-    background-color: var(--accent);
-    transition: var(--transition);
-}
-
-.social-icon:hover::after {
-    width: 100%;
-}
-
-@media (max-width: 768px) {
-    .two-col {
-        grid-template-columns: 1fr;
-        text-align: center;
-    }
-
-    .profile-img {
-        margin-top: 2rem;
-        box-shadow: 15px 15px 0px 0px var(--bg-color-light);
-    }
-
-    .article-item {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
-    }
-
-    .read-more {
-        opacity: 1;
-        transform: translateX(0);
-        margin-left: 0;
-    }
-}
-
-/* Detail Page Content */
-.article-content {
-    padding-top: 120px;
-    /* Space for fixed nav */
-    padding-bottom: 80px;
-    max-width: 800px;
-    margin: 0 auto;
-    color: var(--text-secondary);
-}
-
-.article-content h1 {
-    color: var(--text-primary);
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    line-height: 1.1;
-}
-
-.article-content h2 {
-    color: var(--text-primary);
-    font-size: 2rem;
-    margin-top: 3rem;
-    margin-bottom: 1.5rem;
-}
-
-.article-content h3,
-.article-content h4,
-.article-content h5 {
-    color: var(--text-primary);
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-}
-
-.article-content p {
-    margin-bottom: 1.5rem;
-    font-size: 1.1rem;
-    line-height: 1.8;
-}
-
-.article-content ul,
-.article-content ol {
-    margin-bottom: 1.5rem;
-    padding-left: 1.5rem;
-}
-
-.article-content li {
-    margin-bottom: 0.5rem;
-}
-
-.article-content a {
-    color: var(--accent);
-    text-decoration: underline;
-    text-underline-offset: 4px;
-}
-
-.article-content hr {
-    border: 0;
-    height: 1px;
-    background: rgba(136, 146, 176, 0.2);
-    margin: 4rem 0;
-}
-
-/* Enhanced Contact Cards */
-.contact-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 2rem;
-    margin: 3rem 0;
-    width: 100%;
-}
-
-.contact-card {
-    background: var(--bg-color-light);
-    padding: 2.5rem;
-    border-radius: 8px;
-    text-align: center;
-    border: 1px solid transparent;
-    transition: var(--transition);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.contact-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px -15px rgba(2, 12, 27, 0.7);
-}
-
-.contact-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: var(--accent);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-}
-
-.contact-card:hover::before {
-    transform: scaleX(1);
-}
-
-.contact-card-icon {
-    font-size: 2.5rem;
-    color: var(--accent);
-    margin-bottom: 0.5rem;
-}
-
-.contact-card h3 {
-    font-size: 1.3rem;
-    margin: 0;
-    color: var(--text-primary);
-}
-
-.contact-card a {
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-    transition: var(--transition);
+    margin: 0 1rem;
     text-decoration: none;
 }
 
-.contact-card a:hover {
+.nav-link:hover {
     color: var(--accent);
-}
-
-.github-btn-styled {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 24px;
-    background: transparent;
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    border-radius: 4px;
-    font-family: var(--font-body);
-    /* Changed from mono */
-    font-weight: 500;
-    transition: var(--transition);
-    margin-right: 1rem;
-    text-decoration: none;
-    font-size: 1rem;
-}
-
-.github-btn-styled:hover {
-    transform: translateY(-2px);
-}
-
-/* --- Resume / Experience Section --- */
-.resume-section {
-    max-width: 900px;
-    margin: 0 auto;
-}
-
-/* Tabs */
-.resume-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-    flex-wrap: wrap;
-}
-
-.tab-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-family: var(--font-heading);
-    /* Or body, depending on preference */
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid transparent;
-    transition: var(--transition);
-}
-
-.tab-btn:hover,
-.tab-btn.active {
-    color: var(--accent);
-}
-
-.tab-btn.active {
-    border-bottom-color: var(--accent);
-}
-
-/* Tab Content */
-.tab-content {
-    display: none;
-    animation: fadeIn 0.5s ease-in-out;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Timeline / Card Styles (Reused & Enhanced) */
-.timeline {
-    position: relative;
-    padding-left: 2rem;
-    border-left: 2px solid var(--bg-color-light);
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 3rem;
-}
-
-.timeline-item:last-child {
-    margin-bottom: 0;
-}
-
-.timeline-dot {
-    position: absolute;
-    left: -2.6rem;
-    top: 5px;
-    width: 1.2rem;
-    height: 1.2rem;
-    background: var(--bg-color);
-    border: 2px solid var(--accent);
-    border-radius: 50%;
-    transition: var(--transition);
-}
-
-.timeline-item:hover .timeline-dot {
-    background: var(--accent);
-    box-shadow: 0 0 10px var(--accent-glow);
-}
-
-.timeline-card {
-    background: var(--bg-color-light);
-    padding: 2rem;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    transition: var(--transition);
-}
-
-.timeline-card:hover {
-    transform: translateY(-5px);
-    border-color: rgba(100, 255, 218, 0.1);
-    box-shadow: 0 10px 30px -15px rgba(2, 12, 27, 0.7);
-}
-
-.timeline-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 0.5rem;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.timeline-header h3 {
-    font-size: 1.3rem;
-    color: var(--text-primary);
-}
-
-.timeline-date {
-    color: var(--accent);
-    font-family: var(--font-body);
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.timeline-org {
-    color: var(--text-secondary);
-    font-size: 1rem;
-    margin-bottom: 1rem;
-    font-weight: 500;
-}
-
-.timeline-content ul {
-    list-style: none;
-    padding: 0;
-}
-
-.timeline-content li {
-    position: relative;
-    padding-left: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-}
-
-.timeline-content li::before {
-    content: '▹';
-    position: absolute;
-    left: 0;
-    color: var(--accent);
-}
-
-/* Certifications Specifics */
-.cert-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 2rem;
-}
-
-.cert-card {
-    background: var(--bg-color-light);
-    padding: 2rem;
-    border-radius: 8px;
-    text-align: center;
-    border: 1px solid transparent;
-    transition: var(--transition);
-}
-
-.cert-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-5px);
-}
-
-.cert-icon {
-    font-size: 2.5rem;
-    color: var(--accent);
-    margin-bottom: 1rem;
-    display: block;
-}
-
-.cert-logo {
-    width: 120px;
-    height: 120px;
-    object-fit: contain;
-    margin-bottom: 1rem;
-    border-radius: 8px;
-    transition: var(--transition);
-}
-
-.cert-card:hover .cert-logo {
-    transform: scale(1.1);
-}
-
-/* Footer Clean */
-footer {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin-top: auto;
 }
         `;
     }
@@ -1174,26 +657,17 @@ footer {
         const css = await fetchCss();
         const isProject = metadata.type === 'project';
         const relativePath = isProject ? '../' : '../';
+        const includeNavFooter = includeNavFooterCheckbox && includeNavFooterCheckbox.checked;
 
         const githubButton = metadata.githubUrl
             ? `<a href="${metadata.githubUrl}" target="_blank" rel="noopener noreferrer" class="github-link">View on GitHub</a>`
             : '';
 
-        return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="${escapeHtml(metadata.description)}">
-    <title>${escapeHtml(metadata.title)} | Connor Horning</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <style>
-${css}
-    </style>
-</head>
-<body>
+        /**
+         * Get default navbar HTML
+         */
+        function getDefaultNavbar() {
+            return `
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
@@ -1215,16 +689,14 @@ ${css}
             </div>
         </div>
     </nav>
+`;
+        }
 
-    <!-- Main Content -->
-    <main class="content-wrapper article-content">
-        <h1>${escapeHtml(metadata.title)}</h1>
-        <p class="subtitle">${escapeHtml(metadata.description)}</p>
-        ${githubButton}
-        
-        ${renderedContent}
-    </main>
-
+        /**
+         * Get default footer HTML
+         */
+        function getDefaultFooter() {
+            return `
     <!-- Footer -->
     <footer>
         <div class="content-wrapper">
@@ -1239,6 +711,42 @@ ${css}
             this.classList.toggle('active');
         });
     </script>
+`;
+        }
+
+        // Use custom navbar/footer if uploaded, otherwise use defaults
+        const navbarHtml = includeNavFooter
+            ? (customNavbarHtml || getDefaultNavbar())
+            : '';
+        const footerHtml = includeNavFooter
+            ? (customFooterHtml || getDefaultFooter())
+            : '';
+
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="${escapeHtml(metadata.description)}">
+    <title>${escapeHtml(metadata.title)}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+${css}
+    </style>
+</head>
+<body>
+${navbarHtml}
+    <!-- Main Content -->
+    <main class="content-wrapper article-content">
+        <h1>${escapeHtml(metadata.title)}</h1>
+        <p class="subtitle">${escapeHtml(metadata.description)}</p>
+        ${githubButton}
+        
+        ${renderedContent}
+    </main>
+${footerHtml}
 </body>
 </html>`;
     }

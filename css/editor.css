@@ -287,11 +287,32 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
-    height: fit-content;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
     position: sticky;
     top: calc(60px + var(--space-md));
     box-shadow: var(--shadow-md);
     transition: all var(--transition-normal);
+}
+
+/* Custom scrollbar for metadata panel */
+.metadata-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.metadata-panel::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.metadata-panel::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+    transition: background var(--transition-fast);
+}
+
+.metadata-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
 }
 
 .metadata-panel:hover {
@@ -657,6 +678,42 @@ body {
     border-color: var(--accent-primary);
     color: white;
 }
+
+/* CSS Upload Group */
+.css-upload-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+}
+
+.css-filename {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    padding: 2px 8px;
+    background: var(--bg-glass);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-primary);
+}
+
 
 #markdown-editor {
     flex: 1;
