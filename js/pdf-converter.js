@@ -322,12 +322,18 @@ const PdfConverter = (function () {
             text = text.trim();
 
             // Fix common spacing issues in PDFs
-            // Space after period before capital letter
+            // More aggressive spacing fixes for common PDF artifacts
             text = text.replace(/([a-z])([A-Z])/g, '$1 $2');  // "aZoom" -> "a Zoom"
             text = text.replace(/\.([A-Za-z])/g, '. $1');     // ".A" -> ". A"
             text = text.replace(/\:([A-Za-z])/g, ': $1');     // ":A" -> ": A"
+            text = text.replace(/,([A-Za-z])/g, ', $1');      // ",A" -> ", A"
+            text = text.replace(/;([A-Za-z])/g, '; $1');      // ";A" -> "; A"
             text = text.replace(/(\d)([A-Z])/g, '$1 $2');     // "2If" -> "2 If"
             text = text.replace(/([a-z])(\d)/g, '$1 $2');     // "step1" -> "step 1"
+            text = text.replace(/([a-z])([A-Z][a-z])/g, '$1 $2');  // "textStart" -> "text Start"
+            // Fix bracket spacing
+            text = text.replace(/\)([A-Z])/g, ') $1');        // ")Next" -> ") Next"
+            text = text.replace(/\]([A-Z])/g, '] $1');        // "]Next" -> "] Next"
 
             // Detect formatting based on font size and style
             const avgFontSize = lineItems.reduce((sum, i) => sum + i.fontSize, 0) / lineItems.length;
@@ -344,21 +350,32 @@ const PdfConverter = (function () {
             }
 
             // Heading detection (don't indent headings)
+            // More nuanced heading detection
             if (avgFontSize >= 20) {
                 return '# ' + text;
             } else if (avgFontSize >= 16) {
                 return '## ' + text;
-            } else if (avgFontSize >= 13 && isBold) {
+            } else if (avgFontSize >= 14 && isBold) {
                 return '### ' + text;
-            } else if (isBold && text.length < 60) {
-                // Bold text that looks like a sub-heading
+            } else if (avgFontSize >= 13 && isBold && text.length < 80) {
+                return '#### ' + text;
+            } else if (isBold && text.length < 60 && !text.includes(':')) {
+                // Bold text that looks like a sub-heading (but not labels like "Note:")
                 return '**' + text + '**';
             }
 
-            // Detect numbered lists (1. 2. 3. etc.)
-            if (/^\d+[.)]\s*/.test(text)) {
-                const match = text.match(/^(\d+)[.)]\s*(.*)/);
-                if (match) {
+            // Detect numbered lists (1. 2. 3. etc.) - more flexible
+            if (/^\d+[.)]\s+/.test(text)) {
+                const match = text.match(/^(\d+)[.)]\s+(.*)/);
+                if (match && match[2].length > 0) {
+                    return match[1] + '. ' + match[2];
+                }
+            }
+
+            // Handle merged list items like "1.Item" without space
+            if (/^\d+[.)]([A-Z])/.test(text)) {
+                const match = text.match(/^(\d+)[.)](.*)/);
+                if (match && match[2].length > 0) {
                     return match[1] + '. ' + match[2];
                 }
             }
